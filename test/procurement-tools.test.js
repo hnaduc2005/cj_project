@@ -8,7 +8,7 @@ test('Procurement tools: warehouse approval, department routing, quick quotes an
   await new Promise(r=>app.server.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+app.server.address().port;
   t.after(()=>{app.server.closeAllConnections();app.server.close();app.db.close();});
   async function call(path,data,cookie,status=200){const r=await fetch(base+'/api'+path,{method:data===undefined?'GET':'POST',headers:{'Content-Type':'application/json',...(cookie?{cookie}:{})},body:data===undefined?undefined:JSON.stringify(data)});const result=await r.json();assert.equal(r.status,status,path+': '+JSON.stringify(result));return {data:result,cookie:r.headers.get('set-cookie')?.split(';')[0]};}
-  const admin=(await call('/login',{email:'uyenthu.cu@cj.net',password:'Test-only!123'})).cookie;
+  const admin=(await call('/login',{email:'admin@cj.net',password:'Test-only!123'})).cookie;
   const req=(await call('/auth/email',{email:'tools@cj.net'})).cookie,other=(await call('/auth/email',{email:'other@cj.net'})).cookie;
   const warehouse={name:'Kho đề nghị',address:'123 Test',receiver_name:'Receiver',receiver_phone:'0900000000',receiver_email:'receiver@cj.net',manager_email:'manager@cj.net'};
   let warehouseId,order,productCode;

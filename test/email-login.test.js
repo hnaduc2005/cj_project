@@ -20,7 +20,7 @@ test('Email-only access: stable profiles, own orders and activity, no Microsoft 
   assert.equal((await call('/orders',undefined,again.cookie)).body[0].id,order.body.id);
   const activity=(await call('/activity',undefined,again.cookie)).body;assert.ok(activity.some(x=>x.action==='EMAIL_LOGIN'));assert.ok(activity.some(x=>x.action==='ORDER_CREATED'));assert.ok(activity.some(x=>x.action==='LOGOUT'));assert.ok(activity.every(x=>!('data' in x)));
   const other=await call('/auth/email',{email:'other@cj.net'});assert.deepEqual((await call('/orders',undefined,other.cookie)).body,[]);await call('/orders/'+order.body.id,undefined,other.cookie,404);assert.ok((await call('/activity',undefined,other.cookie)).body.every(x=>x.action==='EMAIL_LOGIN'));
-  await call('/auth/email',{email:'uyenthu.cu@cj.net'},null,403);
+  await call('/auth/email',{email:'admin@cj.net'},null,403);
   app.db.prepare("UPDATE users SET role='ADMIN' WHERE id=?").run(again.body.id);
   await call('/admin/accounts',undefined,again.cookie,401);await call('/auth/email',{email:'person@cj.net'},null,403);
   app.db.prepare('UPDATE account_flags SET active=0 WHERE user_id=?').run(other.body.id);await call('/auth/email',{email:'other@cj.net'},null,403);

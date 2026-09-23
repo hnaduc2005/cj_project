@@ -8,7 +8,7 @@
 |---|---|
 | Requestor @cj.net tự truy cập | Microsoft Entra code flow + PKCE; xác minh tenant và Graph identity; tự tạo tài khoản, không cần Admin duyệt đăng ký |
 | Chỉ xem đơn đúng email | Session lấy user ID từ DB, kiểm tra ownership ở API; sửa ID không vượt quyền |
-| Admin chính được chỉ định | Đã khởi tạo uyenthu.cu@cj.net bằng mật khẩu yêu cầu, scrypt hash; không công khai password trong frontend |
+| Admin chính được chỉ định | Đã khởi tạo admin@cj.net bằng mật khẩu yêu cầu, scrypt hash; không công khai password trong frontend |
 | Mã đơn theo kho/ngày | PO - KHO - DD.MM.YYYY - 001; sequence kho/ngày Việt Nam trong transaction; số không tái sử dụng |
 | Tuyến quản lý từ WH List | manager_email snapshot khi gửi; trạng thái PENDING_APPROVAL; chỉ manager đúng email quyết định; không tự duyệt |
 | Gửi đề xuất từ Requestor | Outbox gửi Graph từ mailbox Requestor đến manager + các Admin active, nội dung không có giá |

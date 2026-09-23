@@ -16,7 +16,7 @@ test('PROCUREMENT SMILE v2 end-to-end', async t => {
   t.after(()=>{server.closeAllConnections();server.close();db.close();});
   async function call(path,cookie,data,expected=200){const response=await fetch(base+'/api'+path,{method:data===undefined?'GET':'POST',headers:{...(cookie?{cookie}:{}),...(data===undefined?{}:{'Content-Type':'application/json',Origin:base})},body:data===undefined?undefined:JSON.stringify(data)});const result=await response.json();assert.equal(response.status,expected,path+': '+JSON.stringify(result));return result;}
   async function sso(code,expected=302){const start=await fetch(base+'/api/auth/microsoft?email='+encodeURIComponent(profiles[code].email),{redirect:'manual'});const state=new URL(start.headers.get('location')).searchParams.get('state'),cookie=start.headers.get('set-cookie').split(';')[0];const end=await fetch(base+'/api/auth/microsoft/callback?state='+state+'&code='+code,{headers:{cookie},redirect:'manual'});assert.equal(end.status,expected,await end.clone().text());return end.headers.get('set-cookie')?.split(';')[0];}
-  const adminResponse=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'uyenthu.cu@cj.net',password:'Test-only-password-123!'})});assert.equal(adminResponse.status,200);const admin=adminResponse.headers.get('set-cookie').split(';')[0];
+  const adminResponse=await fetch(base+'/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'admin@cj.net',password:'Test-only-password-123!'})});assert.equal(adminResponse.status,200);const admin=adminResponse.headers.get('set-cookie').split(';')[0];
   const req=await sso('requestor'),other=await sso('other'),manager=await sso('manager');
   let wh,order;
   const item={original_item_name:'Sản phẩm kiểm thử',uom:'Cái',supplier_code:'TEST-V1',quantity:2,note:'Nhu cầu kho'};
@@ -69,7 +69,7 @@ test('PROCUREMENT SMILE v2 end-to-end', async t => {
     assert.equal((await call('/orders/'+order.id,req)).status,'DRAFT');assert.equal(delivered.length,0);
     order=await call('/orders/'+order.id+'/submit',req,{notify_manager:true,extra_recipients:'Extra@EXAMPLE.com;manager@cj.net;extra@example.com'});
     assert.equal(order.status,'SUBMITTED');assert.equal(delivered.length,2);noPrices(order);
-    const auto=delivered.find(m=>m.event.kind==='ADMIN_ORDER_NOTIFICATION');assert.deepEqual(auto.payload.message.toRecipients.map(r=>r.emailAddress.address),['uyenthu.cu@cj.net']);const mail=delivered.find(m=>m.event.kind==='ORDER_NOTIFICATION');assert.equal(mail.sender,'requestor@cj.net');assert.deepEqual(mail.payload.message.toRecipients.map(r=>r.emailAddress.address).sort(),['extra@example.com','manager@cj.net']);assert.ok(!mail.payload.message.body.content.includes('/approvals/'));assert.ok(!mail.payload.message.body.content.includes('100000'));assert.equal(mail.event.kind,'ORDER_NOTIFICATION');
+    const auto=delivered.find(m=>m.event.kind==='ADMIN_ORDER_NOTIFICATION');assert.deepEqual(auto.payload.message.toRecipients.map(r=>r.emailAddress.address),['admin@cj.net']);const mail=delivered.find(m=>m.event.kind==='ORDER_NOTIFICATION');assert.equal(mail.sender,'requestor@cj.net');assert.deepEqual(mail.payload.message.toRecipients.map(r=>r.emailAddress.address).sort(),['extra@example.com','manager@cj.net']);assert.ok(!mail.payload.message.body.content.includes('/approvals/'));assert.ok(!mail.payload.message.body.content.includes('100000'));assert.equal(mail.event.kind,'ORDER_NOTIFICATION');
     await call('/orders/'+order.id,manager,undefined,404);await call('/approvals',manager,undefined,410);await call('/approvals/'+order.id+'/decision',manager,{decision:'APPROVED'},410);
     await call('/orders/'+order.id+'/submit',req,{notify_manager:true},400);assert.equal(delivered.length,2);
     await call('/orders',req,{id:order.id,warehouse_id:wh.id,items:[item]},400);
@@ -82,7 +82,7 @@ test('PROCUREMENT SMILE v2 end-to-end', async t => {
     const result=await call('/admin/orders/'+order.id+'/generate-po',admin,{});assert.equal(result.status,'SENT_TO_SUPPLIER');assert.equal(result.documents.length,2);assert.equal(delivered.length,5);
     const expectedTotals={'TEST-V1':1296000,'TEST-V2':432000};
     for(const doc of result.documents){assert.ok(doc.filename.startsWith(order.number));assert.ok(doc.filename.endsWith(' - '+doc.supplier_id+'.xlsx'));const response=await fetch(base+'/api/admin/documents/'+doc.id,{headers:{cookie:admin}});const wb=new ExcelJS.Workbook();await wb.xlsx.load(Buffer.from(await response.arrayBuffer()));const s=wb.getWorksheet('FORM PO'),totalRow=doc.supplier_id==='TEST-V1'?25:24;assert.equal(s.getCell('B5').text,order.number);assert.equal(s.getCell('B9').text,wh.name);assert.equal(s.getCell('B6').text,'Vendor '+doc.supplier_id);assert.equal(s.getCell('G'+totalRow).result,expectedTotals[doc.supplier_id]);assert.ok(s.model.merges.includes('A'+totalRow+':F'+totalRow));assert.equal(s.getCell('A'+(28+totalRow-24)).isMerged,true);assert.equal(s.getCell('G19').result,216000);assert.ok(s.getCell('G19').formula.includes('ROUND'));assert.ok(s.getCell('B19').border.bottom.style);await call('/admin/documents/'+doc.id,req,undefined,403);}
-    const poMails=delivered.filter(m=>m.event.kind==='SUPPLIER_PO');for(const m of poMails){assert.equal(m.sender,'uyenthu.cu@cj.net');assert.equal(m.payload.message.toRecipients.length,1);assert.equal(m.payload.message.attachments.length,1);}
+    const poMails=delivered.filter(m=>m.event.kind==='SUPPLIER_PO');for(const m of poMails){assert.equal(m.sender,'admin@cj.net');assert.equal(m.payload.message.toRecipients.length,1);assert.equal(m.payload.message.attachments.length,1);}
     const prices=await call('/admin/master/prices',admin);await call('/admin/master/prices',admin,{...prices.rows.find(p=>p.code==='PRICE-TEST-V1'),unit_price:999999});
     const fixed=await call('/orders/'+order.id,admin);assert.equal(fixed.total,1728000);assert.equal(fixed.items[0].snapshot.unit_price,100000);noPrices(await call('/orders/'+order.id,req));
     await call('/admin/orders/'+order.id+'/generate-po',admin,{},400);await mailer.flush();assert.equal(delivered.length,5);
@@ -101,13 +101,13 @@ test('PROCUREMENT SMILE v2 end-to-end', async t => {
   await t.test('Co-admin equal rights, immediate revocation, protected primary, no creation',async()=>{
     await call('/admin/accounts',admin,{action:'grant',email:'coadmin@cj.net',name:'Co Admin'});const co=await sso('coadmin');assert.equal((await call('/me',co)).role,'ADMIN');
     await call('/admin/accounts',co,{action:'grant',email:'third@cj.net'});await call('/admin/master/prices',co);await call('/orders',co,{warehouse_id:wh.id,items:[item]},403);
-    await call('/admin/accounts',co,{action:'revoke',email:'uyenthu.cu@cj.net'},400);
+    await call('/admin/accounts',co,{action:'revoke',email:'admin@cj.net'},400);
     await call('/admin/accounts',admin,{action:'revoke',email:'coadmin@cj.net'});await call('/admin/master/prices',co,undefined,403);assert.equal((await call('/me',co)).role,'REQUESTER');
     await call('/admin/accounts',admin,{action:'grant',email:'evil@cj.net.attacker.com'},400);
     const created=await call('/orders',req,{warehouse_id:wh.id,items:[item]},201);
     await call('/orders/'+created.id+'/submit',req,{notify_manager:false});
     const notice=delivered.find(m=>m.event.order_id===created.id&&m.event.kind==='ADMIN_ORDER_NOTIFICATION');
-    assert.deepEqual(notice.payload.message.toRecipients.map(r=>r.emailAddress.address).sort(),['third@cj.net','uyenthu.cu@cj.net']);
+    assert.deepEqual(notice.payload.message.toRecipients.map(r=>r.emailAddress.address).sort(),['admin@cj.net','third@cj.net']);
     await call('/orders/'+created.id+'/submit',req,{notify_manager:false},400);
     assert.equal(delivered.filter(m=>m.event.order_id===created.id).length,1);
   });

@@ -50,7 +50,7 @@ ENTRA_CLIENT_SECRET=<secret-value>
 MAIL_ENABLED=false
 ```
 
-Trên máy bàn giao, tài khoản `uyenthu.cu@cj.net` đã được khởi tạo bằng mật khẩu yêu cầu, lưu dưới dạng scrypt hash trong SQLite. `BOOTSTRAP_ADMIN_PASSWORD` đã được xóa giá trị sau khi xác minh đăng nhập; không cần điền lại khi giữ nguyên DB. Trên cài đặt hoàn toàn mới, điền mật khẩu khởi tạo trước lần chạy đầu, sau đó xóa giá trị khỏi `.env` khi tài khoản đã được tạo.
+Trong Neon production, tài khoản Admin chính là `admin@cj.net`; mật khẩu chỉ được lưu dưới dạng scrypt hash. `BOOTSTRAP_ADMIN_PASSWORD` chỉ dùng khi khởi tạo database mới chưa có tài khoản này. Khi dùng database đã có dữ liệu, không cần điền lại biến đó; nếu đặt cho cài đặt mới, hãy xóa giá trị sau khi khởi tạo.
 
 Khởi động lại máy chủ sau khi sửa `.env`. Không ghi secret vào mã JavaScript, README, Git, screenshot hoặc gửi qua email cho người không có quyền.
 
