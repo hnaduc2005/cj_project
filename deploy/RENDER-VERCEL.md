@@ -9,7 +9,7 @@ Kiến trúc triển khai:
 
 ## 1. Điều kiện trước khi bắt đầu
 
-1. Đưa **chính thư mục ứng dụng này** lên một GitHub repository private, sao cho `package.json`, `Dockerfile`, `render.yaml` và `vercel.js` nằm ở root của repository. Không commit `.env`, `deploy/production.env`, file SQLite hoặc mật khẩu.
+1. Đưa **chính thư mục ứng dụng này** lên một GitHub repository private, sao cho `package.json`, `Dockerfile`, `render.yaml` và `vercel.json` nằm ở root của repository. Không commit `.env`, `deploy/production.env`, file SQLite hoặc mật khẩu.
 2. Có tài khoản Vercel và Render kết nối được với repository đó.
 3. Dùng Render web service trả phí vì Persistent Disk không có trên web service miễn phí.
 4. Chọn một URL production duy nhất cho người dùng, ví dụ `https://cj-purchase-ordering.vercel.app` hoặc tên miền riêng. Giá trị này phải khớp chính xác với `APP_URL` trên Render.
@@ -43,17 +43,8 @@ Không tự khai báo `PORT`: Render cung cấp biến này và server đã đ�
 
 1. Trong Vercel chọn **Add New > Project** và import cùng GitHub repository.
 2. Chọn Root Directory như phần 1. Framework Preset có thể để **Other**.
-3. Trước khi Deploy, thêm Environment Variable:
-
-   ```text
-   RENDER_BACKEND_URL=https://cj-purchase-ordering-api.onrender.com
-   ```
-
-   Chỉ nhập origin HTTPS, không thêm `/api`, path hoặc dấu `/` cuối.
-
-4. Áp dụng biến ít nhất cho **Production**. Nếu áp dụng cho Preview, lưu ý các Preview URL vẫn không thể POST/đăng nhập vì backend chỉ chấp nhận Origin đúng bằng `APP_URL` production.
-5. Deploy. `vercel.js` sẽ phục vụ `public` và rewrite `/api/*` sang Render.
-6. Ghi lại URL production chính xác mà Vercel cấp.
+3. `vercel.json` trong repository đã đặt `outputDirectory=public` và rewrite `/api/*` sang `https://cj-project.onrender.com`. Không cần biến môi trường trên Vercel. Nếu đổi hostname Render, sửa `destination` trong `vercel.json` và deploy lại.
+4. Deploy. Ghi lại URL production chính xác mà Vercel cấp. Lưu ý Preview URL vẫn không thể POST/đăng nhập vì backend chỉ chấp nhận Origin đúng bằng `APP_URL` production.
 
 ## 4. Hoàn tất liên kết hai nền tảng
 
