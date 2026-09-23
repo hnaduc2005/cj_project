@@ -1,132 +1,55 @@
-# Triển khai trên Render và Vercel
+# Deploy với Neon PostgreSQL, Render và Vercel
 
-Kiến trúc triển khai:
+Vercel phục vụ giao diện trong `public` và chuyển `/api/*` sang Render. Render chạy backend Node.js; toàn bộ dữ liệu nghiệp vụ, tài liệu đính kèm và hàng đợi mail nằm trong Neon PostgreSQL. Không cần Render Persistent Disk. `DATABASE_URL` được dùng thay cho `DB_PATH` khi có mặt.
 
-- Vercel phục vụ thư mục `public` và giữ URL mà người dùng truy cập.
-- Mọi request `/api/*` được Vercel rewrite sang backend Render.
-- Render chạy Node.js, mail worker và SQLite.
-- SQLite nằm trên Render Persistent Disk tại `/app/data`; không chạy nhiều hơn một instance.
+## 1. Chuyển dữ liệu SQLite hiện có sang Neon
 
-## 1. Điều kiện trước khi bắt đầu
+**Làm bước này trước khi cho Render chạy app**, vì app sẽ tự tạo schema khi kết nối vào một database trống; công cụ nhập chỉ nhận Neon database còn trống. Dừng các thao tác ghi trên app SQLite cũ trong thời gian chuyển và giữ file SQLite gốc làm bản dự phòng. Chưa có dữ liệu trên Render nên nguồn cần chuyển là `data/purchase.sqlite` ở máy hiện tại.
 
-1. Đưa **chính thư mục ứng dụng này** lên một GitHub repository private, sao cho `package.json`, `Dockerfile`, `render.yaml` và `vercel.json` nằm ở root của repository. Không commit `.env`, `deploy/production.env`, file SQLite hoặc mật khẩu.
-2. Có tài khoản Vercel và Render kết nối được với repository đó.
-3. Dùng Render web service trả phí vì Persistent Disk không có trên web service miễn phí.
-4. Chọn một URL production duy nhất cho người dùng, ví dụ `https://cj-purchase-ordering.vercel.app` hoặc tên miền riêng. Giá trị này phải khớp chính xác với `APP_URL` trên Render.
-5. Chuẩn bị Gmail App Password và một mật khẩu bootstrap admin mạnh. Nếu chuyển database hiện tại thì mật khẩu admin đã được lưu trong database; biến bootstrap chỉ được dùng khi chưa có admin chính.
+1. Tạo Neon project và một database/branch mới, để schema `public` trống. Trong Neon Dashboard > **Connect**, lấy PostgreSQL connection string dạng `postgresql://...?...sslmode=require`. Dùng **direct connection** cho quá trình nhập. Không dán URL này vào GitHub, Vercel hay tài liệu.
+2. Tạo file `.env.neon` trong thư mục ứng dụng, chỉ một dòng `DATABASE_URL=postgresql://...`. File này đã được `.gitignore` bỏ qua. Nếu nguồn SQLite ở nơi khác, đặt thêm `SQLITE_SOURCE_PATH=...`.
+3. Tại thư mục chứa `package.json`, chạy:
 
-Hướng dẫn bên dưới giả định root của GitHub repository là thư mục ứng dụng. Nếu dùng monorepo, Vercel phải đặt Root Directory tới thư mục ứng dụng; đồng thời phải đưa một `render.yaml` đã điều chỉnh `dockerfilePath` và `dockerContext` lên root của repository. Cách ít lỗi nhất cho lần deploy đầu là dùng repository riêng cho ứng dụng.
+   ```powershell
+   npm ci
+   npm run migrate:neon
+   npm run migrate:neon -- --apply
+   ```
+
+   Lệnh không có `--apply` chỉ kiểm tra SQLite và đếm từng bảng. Lệnh có `--apply` tạo một snapshot SQLite nhất quán trong `data/`, yêu cầu Neon trống, chuyển 16 bảng cùng index trong một transaction, rồi đối chiếu số dòng và SHA-256 nội dung từng bảng trước khi commit. Nếu lỗi, transaction được rollback; snapshot vẫn được giữ để kiểm tra. Không chạy lại `--apply` trên database đã nhập xong.
+4. Giữ nguyên file SQLite gốc và snapshot backup cho đến khi xác nhận web chạy đúng. Không đưa chúng lên repository hoặc nơi công khai. Sau khi bắt đầu ghi trên Neon, SQLite cũ không còn cập nhật; không thể rollback về nó mà không mất các thay đổi mới.
 
 ## 2. Tạo backend trên Render
 
-1. Trong Render Dashboard chọn **New > Blueprint**.
-2. Kết nối GitHub repository và chọn file `render.yaml`.
-3. Xác nhận service `cj-purchase-ordering-api`, region Singapore, một instance và Persistent Disk 1 GB.
-4. Khi Blueprint hỏi các biến có `sync: false`, nhập:
+Push code mới lên GitHub private, rồi tạo **New > Blueprint** từ repository có `render.yaml` ở root. Blueprint tạo một web service `cj-purchase-ordering-api`, gói Free, một instance, không có disk. Có thể nâng cấp gói trả phí sau; Render Free có thể ngủ khi không có truy cập.
 
-   | Biến | Giá trị lúc tạo |
-   | --- | --- |
-   | `DB_PATH` | `/app/data/purchase.sqlite` |
-   | `APP_URL` | URL Vercel production nếu đã biết; nếu chưa biết dùng tạm `https://temporary.invalid` |
-   | `MAIL_ENABLED` | `false` |
-   | `GMAIL_USER` | Địa chỉ Gmail relay |
-   | `GMAIL_APP_PASSWORD` | Gmail App Password, không phải mật khẩu Gmail thường |
-   | `BOOTSTRAP_ADMIN_PASSWORD` | Mật khẩu mạnh, duy nhất |
+Nhập các biến được yêu cầu khi tạo Blueprint:
 
-5. Tạo Blueprint và chờ Docker build hoàn tất.
-6. Ghi lại URL Render, ví dụ `https://cj-purchase-ordering-api.onrender.com`.
-7. Kiểm tra `https://<render-host>/` trả về trang đăng nhập. Chưa bật gửi mail.
+| Biến | Giá trị |
+| --- | --- |
+| `DATABASE_URL` | URL Neon **của database vừa nhập dữ liệu**, không phải database/branch mới |
+| `APP_URL` | URL production của Vercel, ví dụ `https://ten-du-an.vercel.app`, không có `/` cuối; nếu chưa có, tạm dùng `https://temporary.invalid` rồi sửa sau |
+| `MAIL_ENABLED` | `false` đến khi đăng nhập, dữ liệu và email thử đều đạt |
+| `GMAIL_USER`, `GMAIL_APP_PASSWORD` | Chỉ điền khi dùng Gmail relay; App Password không phải mật khẩu Gmail thông thường |
+| `BOOTSTRAP_ADMIN_PASSWORD` | Dùng cho database mới chưa có admin; khi chuyển SQLite, tài khoản/mật khẩu cũ đã được giữ nguyên |
 
-Không tự khai báo `PORT`: Render cung cấp biến này và server đã đọc `process.env.PORT`. `HOST=0.0.0.0` đã có trong Blueprint.
+`NODE_ENV=production`, `HOST=0.0.0.0` và `MAIL_PROVIDER=GMAIL` đã có trong Blueprint. **Không đặt `DB_PATH`** trên Render; Render tự cấp `PORT`. Nếu dùng Microsoft Entra, đặt thêm `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET` trong Render Environment. Không cần đặt các biến này nếu không dùng Entra.
+
+Chờ build/deploy hoàn tất và ghi lại URL Render. Nếu service hiện có đã tạo bằng cấu hình SQLite, hãy xóa biến `DB_PATH` và disk cũ một cách có kiểm tra sau khi xác nhận Neon đã đủ dữ liệu; với service mới theo Blueprint này thì không có disk.
 
 ## 3. Tạo frontend trên Vercel
 
-1. Trong Vercel chọn **Add New > Project** và import cùng GitHub repository.
-2. Chọn Root Directory như phần 1. Framework Preset có thể để **Other**.
-3. `vercel.json` trong repository đã đặt `outputDirectory=public` và rewrite `/api/*` sang `https://cj-project.onrender.com`. Không cần biến môi trường trên Vercel. Nếu đổi hostname Render, sửa `destination` trong `vercel.json` và deploy lại.
-4. Deploy. Ghi lại URL production chính xác mà Vercel cấp. Lưu ý Preview URL vẫn không thể POST/đăng nhập vì backend chỉ chấp nhận Origin đúng bằng `APP_URL` production.
+Import cùng GitHub repository vào Vercel. Chọn root là thư mục có `vercel.json`, preset **Other**. `vercel.json` hiện đưa `/api/*` tới `https://cj-project.onrender.com`. Nếu URL Render thực tế khác, sửa `destination` trong `vercel.json` rồi deploy lại Vercel. Không cần `DATABASE_URL` trên Vercel: chỉ Render truy cập Neon.
 
-## 4. Hoàn tất liên kết hai nền tảng
+Sau khi Vercel cấp URL production, đặt `APP_URL` trên Render bằng đúng URL đó (không có `/` cuối), lưu và redeploy. Vercel Preview URL khác `APP_URL` sẽ không dùng được để đăng nhập/gửi request ghi. Nếu dùng Entra, callback cần đăng ký theo URL production: `https://<vercel-host>/api/auth/microsoft/callback`.
 
-1. Quay lại Render > service > **Environment**.
-2. Đặt `APP_URL` bằng URL Vercel production chính xác, ví dụ:
+## 4. Kiểm tra trước khi bật mail
 
-   ```text
-   https://cj-purchase-ordering.vercel.app
-   ```
+1. Truy cập `https://<vercel-host>/api/auth/config` và xác nhận HTTP 200.
+2. Đăng nhập admin cũ. Kiểm tra tài khoản, danh mục, đơn hàng, tài liệu/đính kèm và số lượng dữ liệu khớp với báo cáo của lệnh chuyển.
+3. Tạo một yêu cầu thử; redeploy Render rồi xác nhận nó vẫn còn trên Neon.
+4. Gửi email thử đến địa chỉ do bạn kiểm soát. Chỉ sau khi kiểm tra xong mới đổi `MAIL_ENABLED=true` trên Render.
 
-   Không có dấu `/` cuối.
+Session đăng nhập lưu trong RAM nên Render restart có thể yêu cầu đăng nhập lại. Đăng nhập Requestor hiện kiểm tra email `@cj.net` nhưng không chứng thực chủ hộp thư; chỉ mở cho người dùng tin cậy hoặc đặt thêm lớp kiểm soát truy cập trước khi công khai. Neon là nguồn dữ liệu chính sau cutover; tạo kế hoạch backup riêng cho Neon.
 
-3. Save và redeploy Render.
-4. Chỉ truy cập ứng dụng qua URL Vercel khi kiểm thử nghiệp vụ. Không trộn URL Render và Vercel trong cùng một phiên đăng nhập.
-5. Nếu dùng Microsoft Entra ID, thêm `ENTRA_TENANT_ID`, `ENTRA_CLIENT_ID`, `ENTRA_CLIENT_SECRET` trên Render và đăng ký callback:
-
-   ```text
-   https://<vercel-production-host>/api/auth/microsoft/callback
-   ```
-
-## 5. Chọn dữ liệu production
-
-### Phương án A: khởi tạo database mới
-
-Giữ `DB_PATH=/app/data/purchase.sqlite`. Lần chạy đầu server tạo schema, admin chính từ `BOOTSTRAP_ADMIN_PASSWORD` và nhập dữ liệu công ty từ các file trong `templates`.
-
-### Phương án B: chuyển database hiện tại
-
-Không sao chép riêng `purchase.sqlite` khi ứng dụng cũ còn đang ghi WAL. Tạo một snapshot nhất quán rồi chuyển snapshot đó.
-
-1. Dừng web cũ trong thời gian cutover.
-2. Tại thư mục ứng dụng trên máy hiện tại, bảo đảm chưa có `data/render-upload.sqlite`, sau đó chạy:
-
-   ```powershell
-   node --input-type=module -e "import { DatabaseSync } from 'node:sqlite'; const db=new DatabaseSync('data/purchase.sqlite'); db.exec(\"VACUUM INTO 'data/render-upload.sqlite'\"); db.close();"
-   ```
-
-3. Chuyển `data/render-upload.sqlite` vào Persistent Disk bằng Render Shell/SSH/SCP hoặc một URL tải xuống riêng tư, có thời hạn. Đặt file nhận thành `/app/data/purchase-imported.sqlite`. Không đưa database lên repository hoặc URL công khai.
-4. Nếu dùng một URL riêng tư, có thể tạm thêm `DATABASE_IMPORT_URL` trên Render rồi chạy trong Render Shell:
-
-   ```sh
-   node --input-type=module -e "import { writeFile } from 'node:fs/promises'; const r=await fetch(process.env.DATABASE_IMPORT_URL); if(!r.ok) throw new Error('Download failed: '+r.status); const b=Buffer.from(await r.arrayBuffer()); if(b.subarray(0,16).toString()!=='SQLite format 3\u0000') throw new Error('Not a SQLite database'); await writeFile('/app/data/purchase-imported.sqlite',b);"
-   ```
-
-5. Xóa ngay `DATABASE_IMPORT_URL`, đổi `DB_PATH` thành `/app/data/purchase-imported.sqlite`, rồi redeploy Render.
-6. Kiểm tra số lượng tài khoản, kho, vendor, mặt hàng, đơn hàng và tài liệu cũ trước khi cho người dùng ghi dữ liệu mới.
-7. Xóa bản upload tạm ở máy cá nhân sau khi đã xác minh và vẫn giữ một bản backup an toàn riêng.
-
-`DB_PATH` dùng `sync: false`, vì vậy Render không ghi đè giá trị đã đổi khi đồng bộ Blueprint sau này.
-
-## 6. Kiểm thử trước khi bật mail
-
-Thực hiện trên URL Vercel production:
-
-1. Mở `/api/auth/config` và xác nhận HTTP 200.
-2. Đăng nhập Admin; đăng xuất và đăng nhập lại.
-3. Kiểm tra số lượng dữ liệu và tải một file Excel/PO cũ.
-4. Tạo một yêu cầu thử và xác nhận dữ liệu còn nguyên sau một lần redeploy Render.
-5. Kiểm tra cookie `cj_session` có `Secure`, `HttpOnly`, `SameSite=Lax`.
-6. Gửi email thử tới địa chỉ kiểm soát được.
-7. Chỉ sau khi các bước trên đạt, đổi `MAIL_ENABLED=true` trên Render và redeploy.
-
-## 7. Giới hạn cần nhớ
-
-- Persistent Disk chỉ gắn với một Render service và không hỗ trợ nhiều instance. Giữ `numInstances: 1`.
-- Deploy service có disk sẽ có một khoảng downtime ngắn.
-- Vercel Preview URL không khớp `APP_URL`, nên không dùng Preview để kiểm thử thao tác ghi hoặc đăng nhập.
-- Session nằm trong RAM; mỗi lần Render restart người dùng phải đăng nhập lại.
-- Đăng nhập Requestor hiện chỉ kiểm tra email `@cj.net`, không xác minh chủ hộp thư. Không nên mở công khai nếu chưa chấp nhận rủi ro này hoặc chưa đặt ứng dụng sau lớp truy cập nội bộ/VPN.
-- Snapshot tự động của disk không thay thế backup SQLite nhất quán. Lên lịch tạo `VACUUM INTO` và tải backup sang nơi lưu trữ khác.
-
-## 8. Rollback
-
-1. Giữ `MAIL_ENABLED=false` trong lúc rollback để tránh gửi lại thư.
-2. Đưa Vercel về deployment trước trong mục Deployments.
-3. Trên Render, chọn deploy trước hoặc đổi `DB_PATH` về file SQLite backup đã xác minh.
-4. Kiểm tra outbox trước khi bật lại mail; thư trạng thái `UNKNOWN` phải được đối chiếu với Sent Items trước khi retry.
-
-Tài liệu chính thức:
-
-- Render Blueprints: <https://render.com/docs/blueprint-spec>
-- Render Persistent Disks: <https://render.com/docs/disks>
-- Render Docker: <https://render.com/docs/docker>
-- Vercel project configuration: <https://vercel.com/docs/project-configuration>
-- Vercel external rewrites: <https://vercel.com/docs/routing/rewrites>
+Tài liệu chính thức: [Neon connection string](https://neon.com/docs/connect/connect-from-any-app), [Render Blueprint](https://render.com/docs/blueprint-spec), [Render Free](https://render.com/docs/free), [Vercel rewrites](https://vercel.com/docs/routing/rewrites).

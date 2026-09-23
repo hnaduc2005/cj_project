@@ -2,7 +2,7 @@ services:
   - type: web
     name: cj-purchase-ordering-api
     runtime: docker
-    plan: 0.5c-512mb
+    plan: free
     region: singapore
     numInstances: 1
     autoDeployTrigger: commit
@@ -14,8 +14,8 @@ services:
         value: production
       - key: HOST
         value: 0.0.0.0
-      # Enter /app/data/purchase.sqlite during the first Blueprint setup.
-      - key: DB_PATH
+      # Paste the same Neon PostgreSQL URL used for the verified local migration.
+      - key: DATABASE_URL
         sync: false
       # Enter the exact Vercel production URL, without a trailing slash.
       - key: APP_URL
@@ -31,7 +31,3 @@ services:
         sync: false
       - key: BOOTSTRAP_ADMIN_PASSWORD
         sync: false
-    disk:
-      name: purchase-data
-      mountPath: /app/data
-      sizeGB: 1

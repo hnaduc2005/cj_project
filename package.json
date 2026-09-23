@@ -9,11 +9,16 @@
   },
   "scripts": {
     "start": "node --env-file-if-exists=.env server.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "migrate:neon": "node --env-file-if-exists=.env.neon scripts/migrate-sqlite-to-neon.mjs"
   },
   "dependencies": {
     "@azure/msal-node": "^6.0.1",
     "exceljs": "4.4.0",
-    "nodemailer": "^10.0.10"
+    "nodemailer": "^10.0.10",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
   }
 }
