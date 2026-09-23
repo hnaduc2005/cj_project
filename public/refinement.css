@@ -1,0 +1,42 @@
+/* CJ blue, orange and red: calm surfaces, clear actions and readable workspaces. */
+.procurement-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:30px 34px;margin-bottom:24px;border-radius:20px;background:linear-gradient(115deg,#064776,#007bbb 75%,#229ccc);color:white;box-shadow:0 12px 30px #007bbb18;position:relative;overflow:hidden}
+.procurement-banner:after{content:'';position:absolute;width:240px;height:240px;border:35px solid #ffffff0b;border-radius:50%;right:-70px;top:-80px;pointer-events:none}
+.procurement-banner h2{font-size:26px;line-height:1.4;margin:10px 0;color:white;letter-spacing:-.5px}.procurement-banner p{color:#d4eaf7;margin:0 0 20px;font-size:13px}.procurement-banner .eyebrow{color:#ffca7a;font-size:10px;letter-spacing:2px;font-weight:700}.procurement-banner .btn{background:white;color:#006a9f;border:0}.procurement-banner img{width:96px;height:96px;background:white;border-radius:24px;padding:10px;object-fit:contain;z-index:1}
+@media(max-width:560px){.procurement-banner{padding:24px}.procurement-banner h2{font-size:21px}.procurement-banner img{display:none}}
+:root{--navy:#153c59;--blue:#007bbb;--muted:#61768a;--border:#dee8f0}
+body{background:#f3f7fb;color:var(--navy)}
+.sidebar{background:linear-gradient(180deg,#fff 65%,#f0f7fb);border-right:1px solid #dce7ef}
+.workspace{border:1px solid #deedf5;background:#edf6fc}
+.nav a{font-size:13px;color:#50677d;transition:background .18s,color .18s}
+.nav a:hover{background:#edf5fa;color:#006a9f}
+.nav a.active{background:#e3f2fb;box-shadow:inset 3px 0 #007bbb}
+.nav-title{color:#657e91;letter-spacing:1.2px}
+.topbar{border-bottom:1px solid #dfe9f0;box-shadow:0 3px 20px #173d5905}
+.page-heading h1{font-weight:750;letter-spacing:-.6px}.page-heading p{color:#5d7487;font-size:13px;line-height:1.7}
+.smile-hero{border-radius:22px;background:linear-gradient(115deg,#064776,#007bbb 65%,#1594c7);box-shadow:0 14px 35px #007bbb20;border:1px solid #ffffff55}
+.smile-hero p{color:#e4f3fc;font-size:13px}.smile-hero .eyebrow{color:#d6edf9}
+.hero-brand-art img{object-fit:contain;background:white;padding:9px;border-radius:24px}
+.stat{position:relative;overflow:hidden;border:1px solid #dce7ef;border-radius:16px;box-shadow:0 5px 18px #163e6407;padding:23px}
+.stat:after{content:'';position:absolute;inset:0 0 auto;height:4px;background:#007bbb}
+.stat:nth-child(2):after{background:#ed8b23}.stat:nth-child(3):after{background:#e84845}.stat:nth-child(4):after{background:#26876b}
+.stat-title{font-size:13px;color:#4c657a}.stat-foot{font-size:12px;color:#61768a}.stat-number{font-weight:750;font-size:36px}
+.panel{border:1px solid #dce7ef;border-radius:16px;box-shadow:0 5px 20px #193f5d06;overflow:hidden}
+.panel-head{background:linear-gradient(110deg,#fff,#f5faff);border-bottom:1px solid #e1ebf2;padding:20px 23px}.panel-head h2{font-size:16px}
+th{background:#f1f7fb;color:#506b81;font-size:11px;font-weight:700;letter-spacing:.5px}
+td{font-size:13px;line-height:1.6}tbody tr:hover{background-color:#f2f9fe}
+tr.needs-action{background:#fffaf0}tr.waiting-price{background:#fff3dd;box-shadow:inset 4px 0 #ed8b23}
+.sub,.inline-note{color:#62798e;font-size:12px;line-height:1.65}.badge{font-weight:650;line-height:1.5}
+.btn{min-height:38px;border-radius:10px;font-weight:650;transition:box-shadow .18s,background .18s}
+.btn.primary{background:linear-gradient(110deg,#007bbb,#006aa5);box-shadow:0 4px 12px #007bbb20}.btn.primary:hover{background:#005f96;box-shadow:0 6px 18px #007bbb30}
+input,select,textarea{background:#fcfdff;border-color:#cddde9;min-height:42px;color:#24435b}
+input:focus,select:focus,textarea:focus{outline:2px solid #007bbb44;outline-offset:2px;border-color:#007bbb}
+label{color:#37566e}.form-group{margin-bottom:20px}textarea{line-height:1.65}
+dialog{border:1px solid #d8e6f0;border-radius:20px;box-shadow:0 24px 90px #12395533}dialog::backdrop{background:#102f4c66;backdrop-filter:blur(3px)}
+.quick-action{border-radius:12px;padding:17px}.quick-action:hover{border-color:#86bedc;background:#f7fcff}
+.quick-action small,.journey small,.smile-note p{color:#587489;font-size:12px}.quick-action strong,.journey strong{font-size:13px}
+.signin-card h2{font-size:30px}.signin-intro{color:#597084}.signin-hint,.signin-security{color:#61778a;font-size:12px}
+.signin-card label{font-size:13px}.signin-tabs button{font-size:14px}.signin-card .btn{font-size:14px}
+.login-scene{background-size:contain;background-position:center;background-repeat:no-repeat;background-color:#0081bd}.signin-card{max-width:420px}.smile-signin{background:radial-gradient(ellipse at top right,#edf7fd,transparent 65%),#fff}
+.footer{color:#647b8e;border-top:1px solid #dce7ef;padding-top:18px}
+:focus-visible{outline:3px solid #007bbb;outline-offset:3px}
+@media(max-width:560px){.stat{padding:19px 15px}.stat-title{font-size:12px}.stat-foot{font-size:11px}.stat-number{font-size:30px}.panel-head{padding:17px}.signin-card h2{font-size:26px}.smile-hero{border-radius:16px}.page-heading p{font-size:12px}.smile-hero p{font-size:12px}}

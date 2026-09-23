@@ -1,0 +1,6 @@
+node_modules/
+data/
+.env
+deploy/production.env
+test-output/
+.vercel/

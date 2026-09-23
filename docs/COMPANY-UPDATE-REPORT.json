@@ -1,0 +1,46 @@
+{
+  "at": "2026-09-21T11:33:05.154Z",
+  "sourceRows": 347,
+  "products": 347,
+  "prices": 347,
+  "activePrices": 343,
+  "warnings": [
+    {
+      "row": 4,
+      "name": "Seal niêm phong bằng nhựa màu vàng - Unisto Axis Mini 300",
+      "issue": "Báo giá hết hiệu lực",
+      "end": "2025-12-31"
+    },
+    {
+      "row": 5,
+      "name": "Dây Rút 4x150",
+      "issue": "Báo giá hết hiệu lực",
+      "end": "2026-03-31"
+    },
+    {
+      "row": 6,
+      "name": "Màng PE 500 x 2.8kg x 300gL",
+      "issue": "Báo giá hết hiệu lực",
+      "end": "2026-09-18"
+    },
+    {
+      "row": 270,
+      "name": "Sáp thơm Sara 75g",
+      "issue": "Giá 0: giữ giá gốc, chờ Admin xác nhận",
+      "status": "INACTIVE"
+    }
+  ],
+  "errors": [],
+  "oldProducts": 383,
+  "oldPrices": 388,
+  "applied": true,
+  "locations": 25,
+  "backup": "D:/ThuCNU/CODE/cj-purchase-ordering/data/backups/company-update-1789990385170",
+  "preserved": {
+    "orders": 11,
+    "items": 21,
+    "snapshots": 12,
+    "documents": 8,
+    "outbox": 9
+  }
+}

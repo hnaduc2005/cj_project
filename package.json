@@ -1,0 +1,19 @@
+{
+  "name": "cj-purchase-ordering",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "PROCUREMENT SMILE - CJ Logistics Vina",
+  "engines": {
+    "node": ">=24.14.0"
+  },
+  "scripts": {
+    "start": "node --env-file-if-exists=.env server.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "@azure/msal-node": "^6.0.1",
+    "exceljs": "4.4.0",
+    "nodemailer": "^10.0.10"
+  }
+}

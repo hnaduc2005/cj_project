@@ -1,0 +1,31 @@
+services:
+  app:
+    build: ..
+    restart: unless-stopped
+    env_file: ./production.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3000"
+      DB_PATH: /app/data/purchase.sqlite
+      APP_URL: https://${PUBLIC_DOMAIN:?Set PUBLIC_DOMAIN in deploy/.env}
+    volumes:
+      - ../data:/app/data
+    expose:
+      - "3000"
+  proxy:
+    image: caddy:2
+    restart: unless-stopped
+    environment:
+      PUBLIC_DOMAIN: ${PUBLIC_DOMAIN:?Set PUBLIC_DOMAIN in deploy/.env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+volumes:
+  caddy_data:
+  caddy_config:

@@ -1,0 +1,1 @@
+import ExcelJS from 'exceljs';for(const f of ['Import Vendor List.xlsx','ImportItemList .xlsx']){const w=new ExcelJS.Workbook();await w.xlsx.readFile('../'+f);w.worksheets[0].eachRow((r,i)=>{if(i<=3)console.log(f,i,r.values);});}
